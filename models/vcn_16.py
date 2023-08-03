@@ -5,6 +5,11 @@ from utils import DownSample, UpSample
 
 
 class VCN16(nn.Module):
+    """
+    Fully Connected Convolutional Neural Net with VGG-11 as the encoder backbone. The output is 
+    16x upsampled prediction.
+    """
+
     def __init__(self, num_classes=2):
         super().__init__()
         self.down1 = DownSample(3, 64, 1)
@@ -53,7 +58,8 @@ class VCN16(nn.Module):
 
 
 if __name__ == "__main__":
-    shapes = [(1, 3, 112, 112), (1, 3, 945, 673), (1, 3, 448, 448)]
+    shapes = [(1, 3, 112, 112), (1, 3, 945, 673),
+              (1, 3, 448, 448), (1, 3, 567, 345), (1, 3, 452, 224)]
 
     model = VCN16()
     for shape in shapes:
