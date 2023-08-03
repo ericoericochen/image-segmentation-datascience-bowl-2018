@@ -24,7 +24,7 @@ class DownSample(nn.Module):
 
         self.conv_pool = nn.Sequential(*modules)
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.conv_pool(x)
 
 
@@ -34,5 +34,5 @@ class UpSample(nn.Module):
         self.conv_tranpose = nn.ConvTranspose2d(in_channels, out_channels,
                                                 kernel_size=2 * scale, stride=scale, padding=int(scale/2))
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.conv_tranpose(x)

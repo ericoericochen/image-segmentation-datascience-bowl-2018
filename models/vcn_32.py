@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .utils import DownSample, UpSample
+from utils import DownSample, UpSample
 
 
 class VCN32(nn.Module):
@@ -28,7 +28,7 @@ class VCN32(nn.Module):
         )
         self.up32 = UpSample(num_classes, num_classes, 32)
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         img_size = x.shape[2:]
 
         x = self.down1(x)
