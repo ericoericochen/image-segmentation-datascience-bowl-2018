@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .utils import DownSample, UpSample
+import torchvision
+from .utils import DownSample, UpSample, flatten_modules
 
 
 class VCN16(nn.Module):
@@ -10,8 +11,11 @@ class VCN16(nn.Module):
     16x upsampled prediction.
     """
 
-    def __init__(self, num_classes=2):
+    def __init__(self, num_classes=2, pretrained=False, freeze_pretrained=False):
         super().__init__()
+        self.pretrained = pretrained
+        self.freeze_pretrained = freeze_pretrained
+
         self.down1 = DownSample(3, 64, 1)
         self.down2 = DownSample(64, 128, 1)
         self.down3 = DownSample(128, 256, 2)
@@ -30,6 +34,8 @@ class VCN16(nn.Module):
         self.pool4_prediction = nn.Conv2d(512, num_classes, 1)
         self.up2 = UpSample(num_classes, num_classes, 2)
         self.up16 = UpSample(num_classes, num_classes, 16)
+
+        self.initialize_weights()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         img_size = x.shape[2:]
@@ -56,14 +62,30 @@ class VCN16(nn.Module):
 
         return x
 
+    def initialize_weights(self):
+        if self.pretrained:
+            print("PRETRAINED")
+            # get pretrained model
+            pretrained = torchvision.models.vgg11(weights="IMAGENET1K_V1")
 
-if __name__ == "__main__":
-    shapes = [(1, 3, 112, 112), (1, 3, 945, 673),
-              (1, 3, 448, 448), (1, 3, 567, 345), (1, 3, 452, 224)]
+            # get convolutional layers of pretrained model
+            pretrained_layers = [
+                layer for layer in pretrained.features.children()]
 
-    model = VCN16()
-    for shape in shapes:
-        inp = torch.rand(shape)
-        out = model(inp)
+            # get layers of current network
+            layers = flatten_modules(
+                [self.down1, self.down2, self.down3, self.down4, self.down5])
 
-        assert out.shape[2:] == inp.shape[2:]
+            assert len(pretrained_layers) == len(layers)
+
+            # get convolutional layers of pretrained model and copy the weights to FCN
+            for layer, pretrained_layer in zip(layers, pretrained_layers):
+                if isinstance(layer, nn.Conv2d) and isinstance(pretrained_layer, nn.Conv2d):
+                    assert layer.weight.size() == pretrained_layer.weight.size()
+                    assert layer.bias.size() == pretrained_layer.bias.size()
+
+                    layer.weight.data.copy_(pretrained_layer.weight.data)
+                    layer.bias.data.copy_(pretrained_layer.bias.data)
+
+                    if self.freeze_pretrained:
+                        layer.requires_grad_(False)

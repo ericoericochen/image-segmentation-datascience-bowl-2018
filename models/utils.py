@@ -36,3 +36,30 @@ class UpSample(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.conv_tranpose(x)
+
+
+def flatten_module(module: nn.Module) -> list[nn.Module]:
+    """
+    Returns a list of the primitive modules in module
+    """
+    children = [child for child in module.children()]
+
+    if len(children) == 0:
+        return [module]
+
+    return flatten_modules(children)
+
+
+def flatten_modules(modules: list[nn.Module]) -> list[nn.Module]:
+    """
+    Flattens the modules and returns a list of the primitive modules used in network
+    """
+    flattened = []
+
+    for module in modules:
+        flattened_modules = flatten_module(module)
+
+        for mod in flattened_modules:
+            flattened.append(mod)
+
+    return flattened
