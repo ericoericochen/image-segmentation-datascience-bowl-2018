@@ -35,7 +35,7 @@ class SegmentationDataset(Dataset):
         image_path = os.path.join(image_path, "images")
         image_filename = os.listdir(image_path)[0]
         image_path = os.path.join(image_path, image_filename)
-        image = Image.open(image_path)
+        image = Image.open(image_path).convert("RGB")
 
         # combine masks into one
         mask_filenames = os.listdir(masks_path)
