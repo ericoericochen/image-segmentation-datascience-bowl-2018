@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from utils import DownSample, UpSample
+from .utils import DownSample, UpSample
 
 
 class VCN16(nn.Module):
