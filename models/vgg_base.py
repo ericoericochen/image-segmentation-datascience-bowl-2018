@@ -4,18 +4,33 @@ import torchvision
 from .utils import DownSample, flatten_modules
 
 
-class VGG11Base(nn.Module):
+class VGG11Encoder(nn.Module):
     """
     Convolutional Layers of VGG 11
     """
 
-    def __init__(self, pretrained=False):
+    def __init__(self, num_classes=2, pretrained=False, freeze_pretrained=False):
+        super().__init__()
+
         self.pretrained = pretrained
+        self.freeze_pretrained = freeze_pretrained
+
         self.down1 = DownSample(3, 64, 1)
         self.down2 = DownSample(64, 128, 1)
         self.down3 = DownSample(128, 256, 2)
         self.down4 = DownSample(256, 512, 2)
         self.down5 = DownSample(512, 512, 2)
+        self.prediction = nn.Sequential(
+            nn.Conv2d(512, 4096, 3, 1, 1),
+            nn.ReLU(),
+            nn.Dropout2d(),
+            nn.Conv2d(4096, 4096, 3, 1, 1),
+            nn.ReLU(),
+            nn.Dropout2d(),
+            nn.Conv2d(4096, num_classes, 1, 1),
+        )
+
+        self._initialize_weights()
 
     def forward(self, x: torch.Tensor):
         x = self.down1(x)
@@ -23,6 +38,7 @@ class VGG11Base(nn.Module):
         x = self.down3(x)
         x = self.down4(x)
         x = self.down5(x)
+        x = self.prediction(x)
 
         return x
 
@@ -51,3 +67,6 @@ class VGG11Base(nn.Module):
 
                     layer.weight.data.copy_(pretrained_layer.weight.data)
                     layer.bias.data.copy_(pretrained_layer.bias.data)
+
+                    if self.freeze_pretrained:
+                        layer.requires_grad_(False)
