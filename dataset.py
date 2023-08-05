@@ -1,13 +1,16 @@
 import os
-from torch.utils.data import Dataset
+
 from PIL import Image, ImageChops
+from torch.utils.data import Dataset
+from torchvision.transforms import ToTensor
 
 
 class SegmentationDataset(Dataset):
-    def __init__(self, root: str, train=True, transform=None):
+    def __init__(self, root: str, train=True, transform=None, target_transform=None):
         self.root = root
         self.train = train
         self.transform = transform
+        self.target_transform = target_transform
         self.image_ids = os.listdir(self.root)
 
     def _combine_masks(self, masks: list[Image.Image]) -> Image.Image:
@@ -39,11 +42,21 @@ class SegmentationDataset(Dataset):
 
         # combine masks into one
         mask_filenames = os.listdir(masks_path)
-        masks = [Image.open(os.path.join(masks_path, mask_filename)).convert("L")
-                 for mask_filename in mask_filenames]  # masks are grayscale
+        masks = [
+            Image.open(os.path.join(masks_path, mask_filename)).convert("L")
+            for mask_filename in mask_filenames
+        ]  # masks are grayscale
 
+        # get final mask
         mask = self._combine_masks(masks)
+        to_tensor = ToTensor()
+        mask = to_tensor(mask).long()  # convert to long
 
+        # apply transform to target
+        if self.target_transform:
+            mask = self.target_transform(mask)
+
+        # apply transform to image
         if self.transform:
             image = self.transform(image)
 
