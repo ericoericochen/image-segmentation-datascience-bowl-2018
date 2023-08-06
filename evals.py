@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
+
 import inference
 
 
@@ -63,7 +64,33 @@ def mean_accuracy(model: nn.Module, loader: DataLoader, num_classes=2):
 
 
 def mean_IU(model: nn.Module, loader: DataLoader, num_classes=2):
-    pass
+    """
+    Evaluates mean IU of the predictions by model on data from loader.
+    Mean IU = (1 / # classes) * (sum IU per class)
+    """
+    model.eval()
+
+    intersection = torch.zeros(num_classes)
+    union = torch.zeros(num_classes) + 1e-6
+
+    with torch.no_grad():
+        for X, Y in loader:
+            pred = model(X)
+            mask = inference.get_mask(pred)
+
+            for i in range(num_classes):
+                class_mask = Y == i
+                n_ii = (mask[class_mask] == i).sum()  # TP
+                t_i = class_mask.sum()  # TP + FN
+                sum_n_ji = (mask == i).sum()  # FP + TP
+
+                intersection[i] = n_ii
+                union[i] = t_i + sum_n_ji - n_ii
+
+    iu = intersection / union
+    mean_iu = iu.mean()
+
+    return mean_iu.item()
 
 
 def frequency_weighted_IU(model: nn.Module, loader: DataLoader, num_classes=2):
@@ -84,3 +111,7 @@ if __name__ == "__main__":
     # mean accuracy
     mean_acc = mean_accuracy(model, loader)
     assert torch.isclose(torch.tensor(mean_acc), torch.tensor(5 / 6))
+
+    # mean IU
+    mean_iu = mean_IU(model, loader)
+    assert torch.isclose(torch.tensor(mean_iu), torch.tensor(7 / 12))
