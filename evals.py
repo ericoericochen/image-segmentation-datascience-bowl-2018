@@ -94,7 +94,36 @@ def mean_IU(model: nn.Module, loader: DataLoader, num_classes=2):
 
 
 def frequency_weighted_IU(model: nn.Module, loader: DataLoader, num_classes=2):
-    pass
+    """
+    Evaluates frequency weighted  IU of the predictions by model on data from loader.
+    Frequency Weighted IU = (1 / # pixels) * sum(IOU per class * pixels per class)
+    """
+    model.eval()
+
+    sum_ti = 0
+    intersection = torch.zeros(num_classes)
+    union = torch.zeros(num_classes) + 1e-6
+
+    with torch.no_grad():
+        for X, Y in loader:
+            pred = model(X)
+            mask = inference.get_mask(pred)
+
+            for i in range(num_classes):
+                class_mask = Y == i
+                n_ii = (mask[class_mask] == i).sum()  # TP
+                t_i = class_mask.sum()  # TP + FN
+                sum_n_ji = (mask == i).sum()  # FP + TP
+
+                intersection[i] = n_ii * t_i
+                union[i] = t_i + sum_n_ji - n_ii
+
+                sum_ti += t_i.item()
+
+    weighted_iu = intersection / union
+    frequency_weighted_iu = (1 / sum_ti) * weighted_iu.sum()
+
+    return frequency_weighted_iu.item()
 
 
 if __name__ == "__main__":
@@ -115,3 +144,7 @@ if __name__ == "__main__":
     # mean IU
     mean_iu = mean_IU(model, loader)
     assert torch.isclose(torch.tensor(mean_iu), torch.tensor(7 / 12))
+
+    # frequency weighted IU
+    frequency_mean_iu = frequency_weighted_IU(model, loader)
+    assert torch.isclose(torch.tensor(frequency_mean_iu), torch.tensor(5 / 8))
