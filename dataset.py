@@ -11,7 +11,11 @@ class SegmentationDataset(Dataset):
         self.train = train
         self.transform = transform
         self.target_transform = target_transform
-        self.image_ids = os.listdir(self.root)
+        self.image_ids = [
+            image_id
+            for image_id in os.listdir(self.root)
+            if not image_id.startswith(".")
+        ]
 
     def _combine_masks(self, masks: list[Image.Image]) -> Image.Image:
         if len(masks) == 1:
@@ -40,6 +44,14 @@ class SegmentationDataset(Dataset):
         image_path = os.path.join(image_path, image_filename)
         image = Image.open(image_path).convert("RGB")
 
+        # apply transform to image
+        if self.transform:
+            image = self.transform(image)
+
+        # test dataset does not have masks
+        if not self.train:
+            return image
+
         # combine masks into one
         mask_filenames = os.listdir(masks_path)
         masks = [
@@ -55,9 +67,5 @@ class SegmentationDataset(Dataset):
         # apply transform to target
         if self.target_transform:
             mask = self.target_transform(mask)
-
-        # apply transform to image
-        if self.transform:
-            image = self.transform(image)
 
         return image, mask

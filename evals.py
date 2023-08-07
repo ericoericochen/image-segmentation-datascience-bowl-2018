@@ -5,6 +5,25 @@ from torch.utils.data import DataLoader
 import inference
 
 
+def loss(model: nn.Module, criterion: nn.Module, loader: DataLoader) -> float:
+    """
+    Computes loss over entire loader
+    """
+    model.eval()
+    total_loss = 0
+
+    with torch.no_grad():
+        for X, Y in loader:
+            pred = model(X)
+            loss = criterion(pred, Y)
+            total_loss += loss.item()
+
+    N = len(loader)
+    loss = total_loss / N
+
+    return loss
+
+
 def pixel_accuracy(model: nn.Module, loader: DataLoader) -> float:
     """
     Evaluates pixel accuracy of the predictions by model on data from loader.
