@@ -4,8 +4,9 @@ from torch.utils.data import DataLoader
 
 import inference
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def loss(model: nn.Module, criterion: nn.Module, loader: DataLoader) -> float:
+def loss(model: nn.Module, criterion: nn.Module, loader: DataLoader, device=device) -> float:
     """
     Computes loss over entire loader
     """
@@ -14,6 +15,9 @@ def loss(model: nn.Module, criterion: nn.Module, loader: DataLoader) -> float:
 
     with torch.no_grad():
         for X, Y in loader:
+            X = X.to(device)
+            Y = Y.to(device)
+
             pred = model(X)
             loss = criterion(pred, Y)
             total_loss += loss.item()
@@ -24,7 +28,7 @@ def loss(model: nn.Module, criterion: nn.Module, loader: DataLoader) -> float:
     return loss
 
 
-def pixel_accuracy(model: nn.Module, loader: DataLoader) -> float:
+def pixel_accuracy(model: nn.Module, loader: DataLoader, device=device) -> float:
     """
     Evaluates pixel accuracy of the predictions by model on data from loader.
     Pixel Accuracy = # correctly predicted pixels / # total pixels
@@ -36,6 +40,9 @@ def pixel_accuracy(model: nn.Module, loader: DataLoader) -> float:
 
     with torch.no_grad():
         for X, Y in loader:
+            X = X.to(device)
+            Y = Y.to(device)
+
             pred = model(X)
             mask = inference.get_mask(pred)
             eqs = mask == Y
@@ -51,7 +58,7 @@ def pixel_accuracy(model: nn.Module, loader: DataLoader) -> float:
     return acc
 
 
-def mean_accuracy(model: nn.Module, loader: DataLoader, num_classes=2):
+def mean_accuracy(model: nn.Module, loader: DataLoader, device=device, num_classes=2):
     """
     Evaluates mean accuracy of the predictions by model on data from loader.
     Mean Accuracy = (1 / # classes) * sum(pixel accuracy per class)
@@ -63,6 +70,9 @@ def mean_accuracy(model: nn.Module, loader: DataLoader, num_classes=2):
 
     with torch.no_grad():
         for X, Y in loader:
+            X = X.to(device)
+            Y = Y.to(device)
+
             pred = model(X)
             mask = inference.get_mask(pred)
 
@@ -82,7 +92,7 @@ def mean_accuracy(model: nn.Module, loader: DataLoader, num_classes=2):
     return mean_acc.item()
 
 
-def mean_IU(model: nn.Module, loader: DataLoader, num_classes=2):
+def mean_IU(model: nn.Module, loader: DataLoader, device=device, num_classes=2):
     """
     Evaluates mean IU of the predictions by model on data from loader.
     Mean IU = (1 / # classes) * (sum IU per class)
@@ -94,6 +104,9 @@ def mean_IU(model: nn.Module, loader: DataLoader, num_classes=2):
 
     with torch.no_grad():
         for X, Y in loader:
+            X = X.to(device)
+            Y = Y.to(device)
+
             pred = model(X)
             mask = inference.get_mask(pred)
 
@@ -112,7 +125,7 @@ def mean_IU(model: nn.Module, loader: DataLoader, num_classes=2):
     return mean_iu.item()
 
 
-def frequency_weighted_IU(model: nn.Module, loader: DataLoader, num_classes=2):
+def frequency_weighted_IU(model: nn.Module, loader: DataLoader, device=device, num_classes=2):
     """
     Evaluates frequency weighted  IU of the predictions by model on data from loader.
     Frequency Weighted IU = (1 / # pixels) * sum(IOU per class * pixels per class)
@@ -125,6 +138,9 @@ def frequency_weighted_IU(model: nn.Module, loader: DataLoader, num_classes=2):
 
     with torch.no_grad():
         for X, Y in loader:
+            X = X.to(device)
+            Y = Y.to(device)
+
             pred = model(X)
             mask = inference.get_mask(pred)
 
