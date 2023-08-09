@@ -62,7 +62,6 @@ class VCNTrainer:
 
                 batch_summary = f"Loss: {loss.item()}, Val Loss: {val_loss}"
                 pbar.set_postfix(summary=batch_summary)
-                break
 
             # evaluations (pixel accuracy)
             train_pixel_acc = evals.pixel_accuracy(self.model, self.train_loader)
@@ -76,7 +75,6 @@ class VCNTrainer:
             if verbose:
                 print(epoch_summary)
                 
-            break
 
         iterations = len(train_losses)
 
@@ -90,6 +88,9 @@ class VCNTrainer:
 
         # save checkpoint
         torch.save(checkpoint_data, self.checkpoint)
+        
+        # empty gpu so that we can train other models with out of memory error
+        torch.cuda.empty_cache()
 
         return {
             "model": self.model,
