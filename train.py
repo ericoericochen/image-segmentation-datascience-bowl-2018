@@ -39,7 +39,8 @@ class VCNTrainer:
         for epoch in range(self.epochs):
             # set mode to train
             desc = f"Epoch [{epoch+1}/{self.epochs}]"
-            pbar = tqdm(self.train_loader, leave=True, desc=desc)
+            pbar = tqdm(self.train_loader, leave=False, desc=desc)
+            total_loss = 0
 
             for i, (X, Y) in enumerate(pbar):
                 self.model.train()
@@ -49,6 +50,7 @@ class VCNTrainer:
 
                 pred = self.model(X)
                 loss = self.criterion(pred, Y)
+                total_loss += loss.item()
 
                 # backpropagation
                 optimizer.zero_grad()
@@ -69,8 +71,9 @@ class VCNTrainer:
 
             train_pixel_accuracies.append(train_pixel_acc)
             val_pixel_accuracies.append(val_pixel_acc)
-
-            epoch_summary = f"Epoch [{epoch+1}/{self.epochs}]: Train Pixel Acc: {train_pixel_acc}, Val Pixel Acc: {val_pixel_acc}"
+            
+            train_loss = total_loss / len(self.train_loader)
+            epoch_summary = f"Epoch [{epoch+1}/{self.epochs}]: Loss: {train_loss}, Val Loss: {val_loss} Train Pixel Acc: {train_pixel_acc}, Val Pixel Acc: {val_pixel_acc}"
 
             if verbose:
                 print(epoch_summary)
@@ -83,7 +86,9 @@ class VCNTrainer:
             "train_losses": train_losses,
             "val_losses": val_losses,
             "train_pixel_accuracies": train_pixel_accuracies,
-            "val_pixel_accuracies": val_pixel_accuracies
+            "val_pixel_accuracies": val_pixel_accuracies,
+            "iterations": iterations,
+            "epochs": self.epochs
         }
 
         # save checkpoint
@@ -91,12 +96,3 @@ class VCNTrainer:
         
         # empty gpu so that we can train other models with out of memory error
         torch.cuda.empty_cache()
-
-        return {
-            "model": self.model,
-            "train_losses": train_losses,
-            "val_losses": val_losses,
-            "iterations": iterations,
-            "train_pixel_accuracies": train_pixel_accuracies,
-            "val_pixel_accuracies": val_pixel_accuracies
-        }

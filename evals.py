@@ -48,7 +48,7 @@ def pixel_accuracy(model: nn.Module, loader: DataLoader, device=device) -> float
             eqs = mask == Y
 
             correctly_predicted = eqs.sum()
-            batch_pixels = Y.size(1) * Y.size(2)
+            batch_pixels = Y.size(0) * Y.size(1) * Y.size(2)
 
             num_correctly_predicted += correctly_predicted.item()
             num_pixels += batch_pixels
